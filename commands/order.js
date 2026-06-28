@@ -72,7 +72,7 @@ async function handlePanel(interaction) {
             `${CLOSED} **Livery Design** — Closed\n` +
             `${CLOSED} **Uniform Design** — Closed\n` +
             `${OPEN} **Graphic Design** — Open\n` +
-            `${DELAYED} **Discord Setup** — Delayed\n`
+            `${DELAY} **Discord Setup** — Delayed\n`
         )
         .setColor(0x1e90ff)
         .setFooter({ text: 'Select a service below to open a ticket.' });
