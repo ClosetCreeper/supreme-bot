@@ -62,10 +62,12 @@ async function handlePanel(interaction) {
     const CLOSED = process.env.EMOJI_CLOSED  || '🔴';
     const DELAY  = process.env.EMOJI_DELAYED || '🟡';
 
+    const bannerUrl = process.env.BANNER_URL;
+
     const embed = new EmbedBuilder()
         .setTitle('Order Here')
         .setDescription(
-            'Want to make a purchase? This is the right place! Please check out our order status below before ordering. Thank you so much for ordering with us!\n\n' +
+            'Want to make a purchase? Here\'s the right place! Please check out our order status below before ordering. We thank you for ordering with us!\n\n' +
             `**Order Status:**\n` +
             `${OPEN} **Livery Design** — Open\n` +
             `${OPEN} **Uniform Design** — Open\n` +
@@ -73,7 +75,9 @@ async function handlePanel(interaction) {
             `${OPEN} **Discord Setup** — Open\n`
         )
         .setColor(0x1e90ff)
-        .setFooter({ text: 'Select a service below to open an order ticket.' });
+        .setFooter({ text: 'Select a service below to open a ticket.' });
+
+    if (bannerUrl) embed.setImage(bannerUrl);
 
     const menu = new StringSelectMenuBuilder()
         .setCustomId('order_select')
@@ -93,14 +97,14 @@ async function handlePanel(interaction) {
                 .setValue('graphic'),
             new StringSelectMenuOptionBuilder()
                 .setLabel('Discord Setup')
-                .setDescription('Discord banners, embeds etc.')
+                .setDescription('Full Discord server setup and services')
                 .setValue('discord'),
         );
 
     const row = new ActionRowBuilder().addComponents(menu);
 
     await channel.send({ embeds: [embed], components: [row] });
-    await interaction.reply({ content: `Order has been created! Go to the channel to get started.`, ephemeral: true });
+    await interaction.reply({ content: `✅ Panel sent to ${channel}.`, ephemeral: true });
 }
 
 // ─── Select menu handler (called from index.js) ───────────────────────────────
@@ -119,7 +123,7 @@ async function handleOrderSelect(interaction, client) {
     );
     if (existing) {
         return interaction.editReply({
-            content: `❌ You already have an open **${label}** order: ${existing}`,
+            content: `❌ You already have an open **${label}** ticket: ${existing}`,
         });
     }
 
@@ -180,6 +184,9 @@ async function handleOrderSelect(interaction, client) {
         )
         .setColor(0x57f287)
         .setTimestamp();
+
+    const bannerUrl = process.env.BANNER_URL;
+    if (bannerUrl) openEmbed.setImage(bannerUrl);
 
     await ticketChannel.send({ content: `${member}`, embeds: [openEmbed] });
 
@@ -266,7 +273,7 @@ async function handleClose(interaction) {
         embeds: [
             new EmbedBuilder()
                 .setTitle('🔒 Order Closed')
-                .setDescription('This order has been fulfilled. Thank you for your purchase!\n\nThis channel will remain open for reference. Staff members, use `/order delete` to remove it.')
+                .setDescription('This order has been fulfilled. Thank you for your purchase!\n\nThis channel will remain open for reference. Use `/order delete` to remove it.')
                 .setColor(0xed4245)
                 .setTimestamp()
                 .setFooter({ text: `Closed by ${interaction.user.tag}` })
@@ -363,7 +370,7 @@ module.exports = {
         )
         .addSubcommand(sub => sub
             .setName('fix')
-            .setDescription('Re-register this channel as a ticket in case of an error')
+            .setDescription('Re-register this channel as a ticket after a bot restart')
         )
         .addSubcommand(sub => sub
             .setName('close')
