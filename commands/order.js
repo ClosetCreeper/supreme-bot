@@ -69,8 +69,8 @@ async function handlePanel(interaction) {
         .setDescription(
             'Want to make a purchase? Here\'s the right place! Please check out our order status below before ordering. We thank you for ordering with us!\n\n' +
             `**Order Status:**\n` +
-            `${OPEN} **Livery Design** — Open\n` +
-            `${OPEN} **Uniform Design** — Open\n` +
+            `${CLOSED} **Livery Design** — Open\n` +
+            `${CLOSED} **Uniform Design** — Open\n` +
             `${OPEN} **Graphic Design** — Open\n` +
             `${OPEN} **Discord Setup** — Open\n`
         )
