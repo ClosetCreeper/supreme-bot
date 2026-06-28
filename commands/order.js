@@ -69,10 +69,10 @@ async function handlePanel(interaction) {
         .setDescription(
             'Want to make a purchase? Here\'s the right place! Please check out our order status below before ordering. We thank you for ordering with us!\n\n' +
             `**Order Status:**\n` +
-            `${CLOSED} **Livery Design** — Open\n` +
-            `${CLOSED} **Uniform Design** — Open\n` +
+            `${CLOSED} **Livery Design** — Closed\n` +
+            `${CLOSED} **Uniform Design** — Closed\n` +
             `${OPEN} **Graphic Design** — Open\n` +
-            `${OPEN} **Discord Setup** — Open\n`
+            `${DELAYED} **Discord Setup** — Delayed\n`
         )
         .setColor(0x1e90ff)
         .setFooter({ text: 'Select a service below to open a ticket.' });
