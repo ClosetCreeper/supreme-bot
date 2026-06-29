@@ -50,7 +50,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await command.execute(interaction, client);
         } catch (err) {
             console.error(err);
-            const msg = { content: '❌ An error occurred.', ephemeral: true };
+            const msg = { content: '❌ An error occurred.', flags: 64 };
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp(msg);
             } else {
@@ -63,6 +63,13 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.customId === 'order_select') {
             const { handleOrderSelect } = require('./commands/order');
             await handleOrderSelect(interaction, client);
+        }
+    }
+
+    if (interaction.isButton()) {
+        if (interaction.customId === 'order_claim' || interaction.customId === 'order_unclaim') {
+            const { handleClaimButton } = require('./commands/order');
+            await handleClaimButton(interaction);
         }
     }
 });
