@@ -27,7 +27,7 @@ const APPLICATION_TYPES = {
 // ─── /apply panel ─────────────────────────────────────────────────────────────
 async function handlePanel(interaction) {
     const channel   = interaction.options.getChannel('channel');
-    const bannerUrl = process.env.BANNER_URL;
+    const bannerUrl = process.env.APPLY_BANNER_URL || process.env.BANNER_URL;
 
     const embed = new EmbedBuilder()
         .setTitle('Apply Here')
