@@ -46,7 +46,10 @@ client.on(Events.InteractionCreate, async interaction => {
     try {
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
-            if (!command) return;
+            if (!command) {
+                console.warn(`⚠️ No handler found for command: ${interaction.commandName}`);
+                return;
+            }
             await command.execute(interaction, client);
             return;
         }
