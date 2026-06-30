@@ -1,4 +1,11 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const {
+    SlashCommandBuilder,
+    ContainerBuilder,
+    MediaGalleryBuilder,
+    TextDisplayBuilder,
+    SeparatorBuilder,
+    MessageFlags,
+} = require('discord.js');
 
 function renderStars(rating) {
     let result = '';
@@ -7,6 +14,14 @@ function renderStars(rating) {
     }
     return result;
 }
+
+const STAR_CHOICES = [
+    { name: '⭐',         value: 1 },
+    { name: '⭐⭐',       value: 2 },
+    { name: '⭐⭐⭐',     value: 3 },
+    { name: '⭐⭐⭐⭐',   value: 4 },
+    { name: '⭐⭐⭐⭐⭐', value: 5 },
+];
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -21,8 +36,7 @@ module.exports = {
             .setName('stars')
             .setDescription('Rating from 1 to 5')
             .setRequired(true)
-            .setMinValue(1)
-            .setMaxValue(5)
+            .addChoices(...STAR_CHOICES)
         )
         .addStringOption(opt => opt
             .setName('feedback')
@@ -35,28 +49,39 @@ module.exports = {
         const stars        = interaction.options.getInteger('stars');
         const feedbackText = interaction.options.getString('feedback');
 
-        const embed = new EmbedBuilder()
-            .setTitle('Designer feedback')
-            .addFields(
-                { name: 'User', value: interaction.user.toString() },
-                { name: 'Designer', value: targetUser.toString() },
-                { name: 'Rating', value: `${renderStars(stars)}` },
-                { name: 'Feedback', value: feedbackText || 'No written feedback' }
+        const bannerUrl       = process.env.FEEDBACK_BANNER_URL;
+        const footerImageUrl  = process.env.FEEDBACK_FOOTER_URL;
+        const accentColorHex  = process.env.FEEDBACK_ACCENT_COLOR || '#1e90ff';
+        const accentColor     = parseInt(accentColorHex.replace('#', ''), 16);
+
+        const container = new ContainerBuilder().setAccentColor(accentColor);
+
+        if (bannerUrl) {
+            container.addMediaGalleryComponents(
+                new MediaGalleryBuilder().addItems(item => item.setURL(bannerUrl))
+            );
+        }
+
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('### Designer feedback')
+        );
+
+        container.addSeparatorComponents(new SeparatorBuilder());
+
+        container.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+                `**Reviewed by:** ${interaction.user}\n` +
+                `**Designer:** ${targetUser}\n` +
+                `**Rating:** ${renderStars(stars)} (${stars}/5)\n` +
+                `**Feedback:** ${feedbackText || 'No written feedback'}`
             )
-            .setColor(0x1e90ff)
-            .setTimestamp();
+        );
 
-        // Top banner — set FEEDBACK_BANNER_URL in .env
-        const bannerUrl = process.env.FEEDBACK_BANNER_URL;
-        if (bannerUrl) embed.setImage(bannerUrl);
-
-        const embeds = [embed];
-
-        // Bottom footer pill image — set FEEDBACK_FOOTER_URL in .env
-        const footerImageUrl = process.env.FEEDBACK_FOOTER_URL;
         if (footerImageUrl) {
-            const footerEmbed = new EmbedBuilder().setImage(footerImageUrl);
-            embeds.push(footerEmbed);
+            container.addSeparatorComponents(new SeparatorBuilder());
+            container.addMediaGalleryComponents(
+                new MediaGalleryBuilder().addItems(item => item.setURL(footerImageUrl))
+            );
         }
 
         const feedbackChannelId = process.env.FEEDBACK_CHANNEL_ID;
@@ -69,7 +94,11 @@ module.exports = {
             return interaction.reply({ content: '❌ Feedback channel could not be found. Contact an admin.', ephemeral: true });
         }
 
-        await feedbackChannel.send({ embeds });
+        await feedbackChannel.send({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2,
+        });
+
         await interaction.reply({ content: `✅ Feedback sent to ${feedbackChannel}.`, ephemeral: true });
     }
 };
