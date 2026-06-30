@@ -46,7 +46,7 @@ module.exports = {
         const feedbackText = interaction.options.getString('feedback');
         const bannerUrl       = process.env.FEEDBACK_BANNER_URL;
         const footerImageUrl  = process.env.FEEDBACK_FOOTER_URL;
-        const accentColorHex  = process.env.FEEDBACK_ACCENT_COLOR || '#1e90ff';
+        const accentColorHex  = process.env.FEEDBACK_ACCENT_COLOR || '#9b59b6';
         const accentColor     = parseInt(accentColorHex.replace('#', ''), 16);
         const container = new ContainerBuilder().setAccentColor(accentColor);
         if (bannerUrl) {
