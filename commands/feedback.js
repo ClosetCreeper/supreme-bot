@@ -72,7 +72,7 @@ module.exports = {
             new TextDisplayBuilder().setContent(
                 `**Reviewed by:** ${interaction.user}\n` +
                 `**Designer:** ${targetUser}\n` +
-                `**Rating:** ${renderStars(stars)} (${stars}/5)\n` +
+                `**Rating:** ${renderStars(stars)}\n` +
                 `**Feedback:** ${feedbackText || 'No written feedback'}`
             )
         );
