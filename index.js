@@ -43,33 +43,52 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-    if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
-        try {
+    try {
+        if (interaction.isChatInputCommand()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command) return;
             await command.execute(interaction, client);
-        } catch (err) {
-            console.error(err);
-            const msg = { content: '❌ An error occurred.', flags: 64 };
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp(msg);
-            } else {
-                await interaction.reply(msg);
+            return;
+        }
+
+        if (interaction.isStringSelectMenu()) {
+            if (interaction.customId === 'order_select') {
+                const { handleOrderSelect } = require('./commands/order');
+                await handleOrderSelect(interaction, client);
             }
+            if (interaction.customId === 'apply_select') {
+                const { handleApplySelect } = require('./commands/apply');
+                await handleApplySelect(interaction);
+            }
+            return;
         }
-    }
 
-    if (interaction.isStringSelectMenu()) {
-        if (interaction.customId === 'order_select') {
-            const { handleOrderSelect } = require('./commands/order');
-            await handleOrderSelect(interaction, client);
+        if (interaction.isButton()) {
+            if (interaction.customId === 'order_claim' || interaction.customId === 'order_unclaim') {
+                const { handleClaimButton } = require('./commands/order');
+                await handleClaimButton(interaction);
+            }
+            if (interaction.customId.startsWith('apply_approve_') || interaction.customId.startsWith('apply_decline_')) {
+                const { handleApplyButton } = require('./commands/apply');
+                await handleApplyButton(interaction);
+            }
+            return;
         }
-    }
 
-    if (interaction.isButton()) {
-        if (interaction.customId === 'order_claim' || interaction.customId === 'order_unclaim') {
-            const { handleClaimButton } = require('./commands/order');
-            await handleClaimButton(interaction);
+        if (interaction.isModalSubmit()) {
+            if (interaction.customId.startsWith('apply_modal_')) {
+                const { handleApplyModalSubmit } = require('./commands/apply');
+                await handleApplyModalSubmit(interaction);
+            }
+            return;
+        }
+    } catch (err) {
+        console.error(err);
+        const msg = { content: '❌ An error occurred.', ephemeral: true };
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(msg).catch(() => {});
+        } else {
+            await interaction.reply(msg).catch(() => {});
         }
     }
 });
