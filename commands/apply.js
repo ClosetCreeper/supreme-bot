@@ -199,7 +199,7 @@ async function handleApplyModalSubmit(interaction) {
         },
     });
 
-    await interaction.editReply({ content: `✅ Your application has been submitted! Staff will review it soon.\n${thread.url || ''}` });
+    await interaction.editReply({ content: '✅ Your application has been submitted! Staff will review it soon.' });
 }
 
 // ─── Approve / Decline button handler ──────────────────────────────────────────
@@ -267,6 +267,34 @@ async function handleApplyButton(interaction) {
         ButtonBuilder.from(interaction.message.components[0].components[1]).setDisabled(true),
     );
     await interaction.message.edit({ components: [disabledRow] }).catch(() => {});
+
+    // Tag the post "Completed" and close it
+    const thread = interaction.channel;
+    if (thread?.isThread()) {
+        const forum = thread.parent;
+        if (forum && forum.type === ChannelType.GuildForum) {
+            let completedTag = forum.availableTags.find(t => t.name.toLowerCase() === 'completed');
+
+            if (!completedTag) {
+                const updatedTags = await forum.setAvailableTags([
+                    ...forum.availableTags,
+                    { name: 'Completed' },
+                ]).catch(() => null);
+                if (updatedTags) {
+                    completedTag = updatedTags.availableTags.find(t => t.name.toLowerCase() === 'completed');
+                }
+            }
+
+            const newTagIds = completedTag
+                ? [...new Set([...thread.appliedTags, completedTag.id])]
+                : thread.appliedTags;
+
+            await thread.setAppliedTags(newTagIds).catch(() => {});
+        }
+
+        await thread.setLocked(true).catch(() => {});
+        await thread.setArchived(true).catch(() => {});
+    }
 }
 
 // ─── Command definition ─────────────────────────────────────────────────────────
