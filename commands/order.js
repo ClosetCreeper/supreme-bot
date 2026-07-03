@@ -55,13 +55,16 @@ function isStaffMember(member) {
         : member.permissions.has(PermissionFlagsBits.ManageChannels);
 }
 
-/** Count how many tickets a member currently has claimed by scanning channel permission overwrites */
+/** Count how many tickets a member currently has claimed by checking their roles */
 function countClaimedTickets(guild, memberId) {
-    return guild.channels.cache.filter(c =>
-        isTicketChannel(c) &&
-        c.permissionOverwrites.cache.has(memberId) &&
-        c.permissionOverwrites.cache.get(memberId).allow.has(PermissionFlagsBits.SendMessages)
-    ).size;
+    const member = guild.members.cache.get(memberId);
+    if (!member) return 0;
+    const role1 = process.env.CLAIMED_ROLE_1;
+    const role2 = process.env.CLAIMED_ROLE_2;
+    let count = 0;
+    if (role1 && member.roles.cache.has(role1)) count++;
+    if (role2 && member.roles.cache.has(role2)) count++;
+    return count;
 }
 
 /** Assign the right claimed role based on how many tickets they now hold */
@@ -208,15 +211,28 @@ async function handlePanel(interaction) {
 
     if (bannerUrl) embed.setImage(bannerUrl);
 
+    const availableOptions = [
+                { key: 'livery',  label: 'Livery Design',  description: 'Custom ER:LC livery design' },
+                { key: 'uniform', label: 'Uniform Design',  description: 'Custom ER:LC uniform design' },
+                { key: 'graphic', label: 'Graphic Design',  description: 'Logos, banners, and assorted graphics' },
+                { key: 'discord', label: 'Discord Setup',   description: 'Full Discord server setup and services' },
+            ]
+            .filter(s => (statuses[s.key] || 'open') !== 'closed')
+            .map(s => new StringSelectMenuOptionBuilder()
+                .setLabel(s.label)
+                .setDescription(s.description)
+                .setValue(s.key)
+            );
+
+    if (availableOptions.length === 0) {
+        await channel.send({ embeds: [embed] });
+        return interaction.reply({ content: `✅ Panel sent to ${channel}. (All services are closed — no dropdown shown.)`, ephemeral: true });
+    }
+
     const menu = new StringSelectMenuBuilder()
         .setCustomId('order_select')
         .setPlaceholder('Select a service to order...')
-        .addOptions(
-            new StringSelectMenuOptionBuilder().setLabel('Livery Design').setDescription('Custom ER:LC livery design').setValue('livery'),
-            new StringSelectMenuOptionBuilder().setLabel('Uniform Design').setDescription('Custom ER:LC uniform design').setValue('uniform'),
-            new StringSelectMenuOptionBuilder().setLabel('Graphic Design').setDescription('Logos, banners, and assorted graphics').setValue('graphic'),
-            new StringSelectMenuOptionBuilder().setLabel('Discord Setup').setDescription('Full Discord server setup and services').setValue('discord'),
-        );
+        .addOptions(availableOptions);
 
     const row = new ActionRowBuilder().addComponents(menu);
 
