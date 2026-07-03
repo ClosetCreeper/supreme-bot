@@ -67,7 +67,7 @@ function countClaimedTickets(guild, memberId) {
     return count;
 }
 
-/** Assign the right claimed role based on how many tickets they now hold */
+/** Assign the right claimed roles based on count */
 async function updateClaimRoles(member, claimCount) {
     const role1 = process.env.CLAIMED_ROLE_1;
     const role2 = process.env.CLAIMED_ROLE_2;
@@ -80,6 +80,19 @@ async function updateClaimRoles(member, claimCount) {
         if (claimCount >= 2) await member.roles.add(role2).catch(() => {});
         else await member.roles.remove(role2).catch(() => {});
     }
+}
+
+/** Get claimer member from a ticket channel (the individual user overwrite with SendMessages) */
+async function getClaimerMember(channel, guild) {
+    const staffRoleId = process.env.STAFF_ROLE_ID;
+    const everyoneId  = guild.roles.everyone.id;
+    for (const [id, ow] of channel.permissionOverwrites.cache) {
+        if (id === everyoneId || id === staffRoleId) continue;
+        if (ow.allow.has(PermissionFlagsBits.SendMessages)) {
+            return guild.members.fetch(id).catch(() => null);
+        }
+    }
+    return null;
 }
 
 /** Build the Claim / Unclaim button row */
@@ -161,8 +174,9 @@ async function handleClaimButton(interaction) {
         }
         await channel.permissionOverwrites.delete(member.id).catch(() => {});
 
-        const remaining = countClaimedTickets(interaction.guild, member.id);
-        await updateClaimRoles(member, remaining);
+        // Count AFTER removal — roles still reflect old state, so subtract 1 manually
+        const currentCount = countClaimedTickets(interaction.guild, member.id);
+        await updateClaimRoles(member, Math.max(0, currentCount - 1));
 
         await interaction.reply({
             embeds: [
@@ -351,18 +365,11 @@ async function handleClose(interaction) {
     if (!isTicketChannel(channel)) return interaction.reply({ content: '❌ Ticket channels only.', ephemeral: true });
 
     // Strip claim roles from whoever claimed this ticket
-    const claimer = channel.permissionOverwrites.cache.find((ow, id) =>
-        id !== interaction.guild.roles.everyone.id &&
-        id !== process.env.STAFF_ROLE_ID &&
-        ow.allow.has(PermissionFlagsBits.SendMessages)
-    );
-    if (claimer) {
-        const claimerMember = await interaction.guild.members.fetch(claimer.id).catch(() => null);
-        if (claimerMember) {
-            await channel.permissionOverwrites.delete(claimer.id).catch(() => {});
-            const remaining = countClaimedTickets(interaction.guild, claimer.id);
-            await updateClaimRoles(claimerMember, remaining);
-        }
+    const claimerMember = await getClaimerMember(channel, interaction.guild);
+    if (claimerMember) {
+        await channel.permissionOverwrites.delete(claimerMember.id).catch(() => {});
+        const currentCount = countClaimedTickets(interaction.guild, claimerMember.id);
+        await updateClaimRoles(claimerMember, Math.max(0, currentCount - 1));
     }
 
     await interaction.reply({
@@ -420,8 +427,8 @@ async function handleUnclaim(interaction) {
     }
     await channel.permissionOverwrites.delete(member.id).catch(() => {});
 
-    const remaining = countClaimedTickets(interaction.guild, member.id);
-    await updateClaimRoles(member, remaining);
+    const currentCount = countClaimedTickets(interaction.guild, member.id);
+    await updateClaimRoles(member, Math.max(0, currentCount - 1));
 
     await interaction.reply({
         embeds: [new EmbedBuilder()
@@ -464,17 +471,10 @@ async function handleDelete(interaction) {
     if (!isTicketChannel(channel)) return interaction.reply({ content: '❌ Ticket channels only.', ephemeral: true });
 
     // Strip claim roles from whoever claimed this ticket before deleting
-    const claimer = channel.permissionOverwrites.cache.find((ow, id) =>
-        id !== interaction.guild.roles.everyone.id &&
-        id !== process.env.STAFF_ROLE_ID &&
-        ow.allow.has(PermissionFlagsBits.SendMessages)
-    );
-    if (claimer) {
-        const claimerMember = await interaction.guild.members.fetch(claimer.id).catch(() => null);
-        if (claimerMember) {
-            const remaining = countClaimedTickets(interaction.guild, claimerMember.id) - 1;
-            await updateClaimRoles(claimerMember, Math.max(0, remaining));
-        }
+    const claimerMember = await getClaimerMember(channel, interaction.guild);
+    if (claimerMember) {
+        const currentCount = countClaimedTickets(interaction.guild, claimerMember.id);
+        await updateClaimRoles(claimerMember, Math.max(0, currentCount - 1));
     }
 
     await interaction.reply({ content: '🗑️ Deleting channel in 3 seconds...', ephemeral: true });
