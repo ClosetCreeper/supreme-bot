@@ -55,6 +55,30 @@ function isStaffMember(member) {
         : member.permissions.has(PermissionFlagsBits.ManageChannels);
 }
 
+/** Count how many tickets a member currently has claimed by scanning channel permission overwrites */
+function countClaimedTickets(guild, memberId) {
+    return guild.channels.cache.filter(c =>
+        isTicketChannel(c) &&
+        c.permissionOverwrites.cache.has(memberId) &&
+        c.permissionOverwrites.cache.get(memberId).allow.has(PermissionFlagsBits.SendMessages)
+    ).size;
+}
+
+/** Assign the right claimed role based on how many tickets they now hold */
+async function updateClaimRoles(member, claimCount) {
+    const role1 = process.env.CLAIMED_ROLE_1;
+    const role2 = process.env.CLAIMED_ROLE_2;
+
+    if (role1) {
+        if (claimCount >= 1) await member.roles.add(role1).catch(() => {});
+        else await member.roles.remove(role1).catch(() => {});
+    }
+    if (role2) {
+        if (claimCount >= 2) await member.roles.add(role2).catch(() => {});
+        else await member.roles.remove(role2).catch(() => {});
+    }
+}
+
 /** Build the Claim / Unclaim button row */
 function claimButtonRow() {
     return new ActionRowBuilder().addComponents(
@@ -84,6 +108,15 @@ async function handleClaimButton(interaction) {
     }
 
     if (interaction.customId === 'order_claim') {
+        // Check claim limit
+        const currentClaims = countClaimedTickets(interaction.guild, member.id);
+        if (currentClaims >= 2) {
+            return interaction.reply({
+                content: '❌ You already have **2 active claimed orders**. Unclaim or close one before claiming another.',
+                ephemeral: true,
+            });
+        }
+
         // Lock other staff out of sending — they can still view
         if (staffRole) {
             await channel.permissionOverwrites.edit(staffRole, {
@@ -100,6 +133,8 @@ async function handleClaimButton(interaction) {
             ManageMessages: true,
             AttachFiles: true,
         });
+
+        await updateClaimRoles(member, currentClaims + 1);
 
         await interaction.reply({
             embeds: [
@@ -121,8 +156,10 @@ async function handleClaimButton(interaction) {
                 AttachFiles: true,
             });
         }
-        // Remove individual claimer overwrite (falls back to staff role)
         await channel.permissionOverwrites.delete(member.id).catch(() => {});
+
+        const remaining = countClaimedTickets(interaction.guild, member.id);
+        await updateClaimRoles(member, remaining);
 
         await interaction.reply({
             embeds: [
@@ -297,6 +334,21 @@ async function handleClose(interaction) {
     const channel = interaction.channel;
     if (!isTicketChannel(channel)) return interaction.reply({ content: '❌ Ticket channels only.', ephemeral: true });
 
+    // Strip claim roles from whoever claimed this ticket
+    const claimer = channel.permissionOverwrites.cache.find((ow, id) =>
+        id !== interaction.guild.roles.everyone.id &&
+        id !== process.env.STAFF_ROLE_ID &&
+        ow.allow.has(PermissionFlagsBits.SendMessages)
+    );
+    if (claimer) {
+        const claimerMember = await interaction.guild.members.fetch(claimer.id).catch(() => null);
+        if (claimerMember) {
+            await channel.permissionOverwrites.delete(claimer.id).catch(() => {});
+            const remaining = countClaimedTickets(interaction.guild, claimer.id);
+            await updateClaimRoles(claimerMember, remaining);
+        }
+    }
+
     await interaction.reply({
         embeds: [new EmbedBuilder()
             .setTitle('🔒 Order Closed')
@@ -312,6 +364,14 @@ async function handleClaim(interaction) {
     const staffRole = process.env.STAFF_ROLE_ID;
     if (!isTicketChannel(channel)) return interaction.reply({ content: '❌ Ticket channels only.', ephemeral: true });
 
+    const currentClaims = countClaimedTickets(interaction.guild, member.id);
+    if (currentClaims >= 2) {
+        return interaction.reply({
+            content: '❌ You already have **2 active claimed orders**. Unclaim or close one before claiming another.',
+            ephemeral: true,
+        });
+    }
+
     if (staffRole) {
         await channel.permissionOverwrites.edit(staffRole, {
             ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
@@ -320,6 +380,8 @@ async function handleClaim(interaction) {
     await channel.permissionOverwrites.edit(member.id, {
         ViewChannel: true, SendMessages: true, ReadMessageHistory: true, ManageMessages: true, AttachFiles: true,
     });
+
+    await updateClaimRoles(member, currentClaims + 1);
 
     await interaction.reply({
         embeds: [new EmbedBuilder()
@@ -341,6 +403,9 @@ async function handleUnclaim(interaction) {
         });
     }
     await channel.permissionOverwrites.delete(member.id).catch(() => {});
+
+    const remaining = countClaimedTickets(interaction.guild, member.id);
+    await updateClaimRoles(member, remaining);
 
     await interaction.reply({
         embeds: [new EmbedBuilder()
@@ -381,6 +446,20 @@ async function handleRemove(interaction) {
 async function handleDelete(interaction) {
     const channel = interaction.channel;
     if (!isTicketChannel(channel)) return interaction.reply({ content: '❌ Ticket channels only.', ephemeral: true });
+
+    // Strip claim roles from whoever claimed this ticket before deleting
+    const claimer = channel.permissionOverwrites.cache.find((ow, id) =>
+        id !== interaction.guild.roles.everyone.id &&
+        id !== process.env.STAFF_ROLE_ID &&
+        ow.allow.has(PermissionFlagsBits.SendMessages)
+    );
+    if (claimer) {
+        const claimerMember = await interaction.guild.members.fetch(claimer.id).catch(() => null);
+        if (claimerMember) {
+            const remaining = countClaimedTickets(interaction.guild, claimerMember.id) - 1;
+            await updateClaimRoles(claimerMember, Math.max(0, remaining));
+        }
+    }
 
     await interaction.reply({ content: '🗑️ Deleting channel in 3 seconds...', ephemeral: true });
     setTimeout(() => channel.delete().catch(console.error), 3000);
