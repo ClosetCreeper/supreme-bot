@@ -20,6 +20,14 @@ for (const file of commandFiles) {
     if (command.data && command.execute) {
         client.commands.set(command.data.name, command);
     }
+    // Register the /ticket command from dashboard.js
+    if (command.ticketData && command.ticketExecute) {
+        client.commands.set('ticket', {
+            ENV: command.ENV,
+            data: command.ticketData,
+            execute: command.ticketExecute,
+        });
+    }
 }
 
 const ACTIVITIES = [
@@ -82,6 +90,11 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
                 await mod.handleApplySelect(interaction);
             }
+            if (interaction.customId === 'support_select') {
+                const mod = require('./commands/dashboard');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleSupportSelect(interaction);
+            }
             return;
         }
 
@@ -95,6 +108,21 @@ client.on(Events.InteractionCreate, async interaction => {
                 const mod = require('./commands/apply');
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
                 await mod.handleApplyButton(interaction);
+            }
+            if (interaction.customId === 'dashboard_support') {
+                const mod = require('./commands/dashboard');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleSupportButton(interaction);
+            }
+            if (interaction.customId === 'dashboard_apply') {
+                const mod = require('./commands/dashboard');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleApplyButton(interaction);
+            }
+            if (interaction.customId === 'support_claim' || interaction.customId === 'support_unclaim') {
+                const mod = require('./commands/dashboard');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleClaimButton(interaction);
             }
             return;
         }
