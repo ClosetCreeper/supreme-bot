@@ -1,4 +1,4 @@
-const ENV = 'dev';
+const ENV = 'prod';
 
 const {
     SlashCommandBuilder,
