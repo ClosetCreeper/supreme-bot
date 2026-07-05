@@ -33,7 +33,6 @@ let activityIndex = 0;
 
 client.once(Events.ClientReady, () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
-
     const setActivity = () => {
         client.user.setActivity(ACTIVITIES[activityIndex], { type: ActivityType.Playing });
         activityIndex = (activityIndex + 1) % ACTIVITIES.length;
@@ -42,8 +41,6 @@ client.once(Events.ClientReady, () => {
     setInterval(setActivity, 2000);
 });
 
-client.on(Events.InteractionCreate, async interaction => {
-    try {
 // ─── Dev gate helper ──────────────────────────────────────────────────────────
 function isDevLocked(commandModule, userId) {
     if (commandModule?.ENV !== 'dev') return false;
