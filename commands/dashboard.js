@@ -51,30 +51,6 @@ function isStaffMember(member) {
         : member.permissions.has(PermissionFlagsBits.ManageChannels);
 }
 
-function countClaimedTickets(guild, memberId) {
-    const member = guild.members.cache.get(memberId);
-    if (!member) return 0;
-    const role1 = process.env.CLAIMED_ROLE_1;
-    const role2 = process.env.CLAIMED_ROLE_2;
-    let count = 0;
-    if (role1 && member.roles.cache.has(role1)) count++;
-    if (role2 && member.roles.cache.has(role2)) count++;
-    return count;
-}
-
-async function updateClaimRoles(member, claimCount) {
-    const role1 = process.env.CLAIMED_ROLE_1;
-    const role2 = process.env.CLAIMED_ROLE_2;
-    if (role1) {
-        if (claimCount >= 1) await member.roles.add(role1).catch(() => {});
-        else await member.roles.remove(role1).catch(() => {});
-    }
-    if (role2) {
-        if (claimCount >= 2) await member.roles.add(role2).catch(() => {});
-        else await member.roles.remove(role2).catch(() => {});
-    }
-}
-
 async function getClaimerMember(channel, guild) {
     const staffRoleId = process.env.STAFF_ROLE_ID;
     const everyoneId  = guild.roles.everyone.id;
@@ -247,14 +223,6 @@ async function handleClaimButton(interaction) {
     }
 
     if (interaction.customId === 'support_claim') {
-        const currentClaims = countClaimedTickets(interaction.guild, member.id);
-        if (currentClaims >= 2) {
-            return interaction.reply({
-                content: '❌ You already have **2 active claimed tickets**. Unclaim or close one first.',
-                ephemeral: true,
-            });
-        }
-
         if (staffRole) {
             await channel.permissionOverwrites.edit(staffRole, {
                 ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
@@ -263,7 +231,6 @@ async function handleClaimButton(interaction) {
         await channel.permissionOverwrites.edit(member.id, {
             ViewChannel: true, SendMessages: true, ReadMessageHistory: true, ManageMessages: true, AttachFiles: true,
         });
-        await updateClaimRoles(member, currentClaims + 1);
 
         await interaction.reply({
             embeds: [new EmbedBuilder().setDescription(`✅ **${member.displayName}** has claimed this ticket.`).setColor(0x57f287).setTimestamp()]
@@ -276,8 +243,6 @@ async function handleClaimButton(interaction) {
             });
         }
         await channel.permissionOverwrites.delete(member.id).catch(() => {});
-        const currentCount = countClaimedTickets(interaction.guild, member.id);
-        await updateClaimRoles(member, Math.max(0, currentCount - 1));
 
         await interaction.reply({
             embeds: [new EmbedBuilder().setDescription(`🔓 **${member.displayName}** unclaimed this ticket.`).setColor(0xfee75c).setTimestamp()]
@@ -289,13 +254,6 @@ async function handleClaimButton(interaction) {
 async function handleClose(interaction) {
     const channel = interaction.channel;
     if (!isSupportTicket(channel)) return interaction.reply({ content: '❌ Support ticket channels only.', ephemeral: true });
-
-    const claimerMember = await getClaimerMember(channel, interaction.guild);
-    if (claimerMember) {
-        await channel.permissionOverwrites.delete(claimerMember.id).catch(() => {});
-        const currentCount = countClaimedTickets(interaction.guild, claimerMember.id);
-        await updateClaimRoles(claimerMember, Math.max(0, currentCount - 1));
-    }
 
     await interaction.reply({
         embeds: [new EmbedBuilder()
@@ -325,11 +283,6 @@ async function handleClaim(interaction) {
     const staffRole = process.env.STAFF_ROLE_ID;
     if (!isSupportTicket(channel)) return interaction.reply({ content: '❌ Support ticket channels only.', ephemeral: true });
 
-    const currentClaims = countClaimedTickets(interaction.guild, member.id);
-    if (currentClaims >= 2) {
-        return interaction.reply({ content: '❌ You already have **2 active claimed tickets**. Unclaim or close one first.', ephemeral: true });
-    }
-
     if (staffRole) {
         await channel.permissionOverwrites.edit(staffRole, {
             ViewChannel: true, SendMessages: false, ReadMessageHistory: true,
@@ -338,7 +291,6 @@ async function handleClaim(interaction) {
     await channel.permissionOverwrites.edit(member.id, {
         ViewChannel: true, SendMessages: true, ReadMessageHistory: true, ManageMessages: true, AttachFiles: true,
     });
-    await updateClaimRoles(member, currentClaims + 1);
 
     await interaction.reply({
         embeds: [new EmbedBuilder().setDescription(`✅ **${member.displayName}** has claimed this ticket.`).setColor(0x57f287).setTimestamp()]
@@ -358,8 +310,6 @@ async function handleUnclaim(interaction) {
         });
     }
     await channel.permissionOverwrites.delete(member.id).catch(() => {});
-    const currentCount = countClaimedTickets(interaction.guild, member.id);
-    await updateClaimRoles(member, Math.max(0, currentCount - 1));
 
     await interaction.reply({
         embeds: [new EmbedBuilder().setDescription(`🔓 **${member.displayName}** unclaimed this ticket.`).setColor(0xfee75c).setTimestamp()]
@@ -398,12 +348,6 @@ async function handleRemove(interaction) {
 async function handleDelete(interaction) {
     const channel = interaction.channel;
     if (!isSupportTicket(channel)) return interaction.reply({ content: '❌ Support ticket channels only.', ephemeral: true });
-
-    const claimerMember = await getClaimerMember(channel, interaction.guild);
-    if (claimerMember) {
-        const currentCount = countClaimedTickets(interaction.guild, claimerMember.id);
-        await updateClaimRoles(claimerMember, Math.max(0, currentCount - 1));
-    }
 
     await interaction.reply({ content: '🗑️ Deleting channel in 3 seconds...', ephemeral: true });
     setTimeout(() => channel.delete().catch(console.error), 3000);
