@@ -1,3 +1,5 @@
+const ENV = 'dev';
+
 const {
     SlashCommandBuilder,
     ContainerBuilder,
@@ -21,6 +23,7 @@ const STAR_CHOICES = [
     { name: '⭐⭐⭐⭐⭐', value: 5 },
 ];
 module.exports = {
+    ENV,
     data: new SlashCommandBuilder()
         .setName('feedback')
         .setDescription('Leave feedback for a designer')
