@@ -44,44 +44,69 @@ client.once(Events.ClientReady, () => {
 
 client.on(Events.InteractionCreate, async interaction => {
     try {
+// ─── Dev gate helper ──────────────────────────────────────────────────────────
+function isDevLocked(commandModule, userId) {
+    if (commandModule?.ENV !== 'dev') return false;
+    const devId = process.env.DEV_USER_ID;
+    return devId && userId !== devId;
+}
+
+async function replyDevLocked(interaction) {
+    const msg = { content: '🚧 This command is currently in maintenance mode.', ephemeral: true };
+    if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(msg).catch(() => {});
+    } else if (interaction.isRepliable()) {
+        await interaction.reply(msg).catch(() => {});
+    }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+client.on(Events.InteractionCreate, async interaction => {
+    try {
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (!command) {
                 console.warn(`⚠️ No handler found for command: ${interaction.commandName}`);
                 return;
             }
+            if (isDevLocked(command, interaction.user.id)) return replyDevLocked(interaction);
             await command.execute(interaction, client);
             return;
         }
 
         if (interaction.isStringSelectMenu()) {
             if (interaction.customId === 'order_select') {
-                const { handleOrderSelect } = require('./commands/order');
-                await handleOrderSelect(interaction, client);
+                const mod = require('./commands/order');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleOrderSelect(interaction, client);
             }
             if (interaction.customId === 'apply_select') {
-                const { handleApplySelect } = require('./commands/apply');
-                await handleApplySelect(interaction);
+                const mod = require('./commands/apply');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleApplySelect(interaction);
             }
             return;
         }
 
         if (interaction.isButton()) {
             if (interaction.customId === 'order_claim' || interaction.customId === 'order_unclaim') {
-                const { handleClaimButton } = require('./commands/order');
-                await handleClaimButton(interaction);
+                const mod = require('./commands/order');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleClaimButton(interaction);
             }
             if (interaction.customId.startsWith('apply_approve_') || interaction.customId.startsWith('apply_decline_')) {
-                const { handleApplyButton } = require('./commands/apply');
-                await handleApplyButton(interaction);
+                const mod = require('./commands/apply');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleApplyButton(interaction);
             }
             return;
         }
 
         if (interaction.isModalSubmit()) {
             if (interaction.customId.startsWith('apply_modal_')) {
-                const { handleApplyModalSubmit } = require('./commands/apply');
-                await handleApplyModalSubmit(interaction);
+                const mod = require('./commands/apply');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleApplyModalSubmit(interaction);
             }
             return;
         }
