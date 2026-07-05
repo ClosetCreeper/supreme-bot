@@ -26,8 +26,6 @@ function getPanelRef() {
     return null;
 }
 
-module.exports.getPanelRef = getPanelRef;
-
 // ─── Configuration ───────────────────────────────────────────────────────────
 const SERVICE_CATEGORIES = {
     livery:   'Livery Design',
@@ -231,7 +229,7 @@ async function handlePanel(interaction) {
     const embed = new EmbedBuilder()
         .setTitle('Order Here')
         .setDescription(
-            'Want to make a purchase? This is the right place! Please check out our order status below before ordering. Thank you for ordering with us!\n\n' +
+            'Want to make a purchase? Here\'s the right place! Please check out our order status below before ordering. We thank you for ordering with us!\n\n' +
             `**Order Status:**\n` +
             `${emojiFor('livery')} **Livery Design** — ${labelFor('livery')}\n` +
             `${emojiFor('uniform')} **Uniform Design** — ${labelFor('uniform')}\n` +
@@ -526,6 +524,7 @@ module.exports = {
 
     handleOrderSelect,
     handleClaimButton,
+    getPanelRef,
 
     async execute(interaction) {
         const sub = interaction.options.getSubcommand();
