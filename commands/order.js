@@ -9,6 +9,24 @@ const {
     ChannelType,
     PermissionFlagsBits,
 } = require('discord.js');
+const fs   = require('fs');
+const path = require('path');
+
+// ─── Panel reference (for live editing on /status) ───────────────────────────
+const PANEL_FILE = path.join(__dirname, '..', 'panel.json');
+
+function savePanelRef(channelId, messageId) {
+    fs.writeFileSync(PANEL_FILE, JSON.stringify({ channelId, messageId }, null, 2));
+}
+
+function getPanelRef() {
+    try {
+        if (fs.existsSync(PANEL_FILE)) return JSON.parse(fs.readFileSync(PANEL_FILE, 'utf8'));
+    } catch {}
+    return null;
+}
+
+module.exports.getPanelRef = getPanelRef;
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 const SERVICE_CATEGORIES = {
@@ -239,7 +257,8 @@ async function handlePanel(interaction) {
             );
 
     if (availableOptions.length === 0) {
-        await channel.send({ embeds: [embed] });
+        const sentMsg = await channel.send({ embeds: [embed] });
+        savePanelRef(channel.id, sentMsg.id);
         return interaction.reply({ content: `✅ Panel sent to ${channel}. (All services are closed — no dropdown shown.)`, ephemeral: true });
     }
 
@@ -250,7 +269,8 @@ async function handlePanel(interaction) {
 
     const row = new ActionRowBuilder().addComponents(menu);
 
-    await channel.send({ embeds: [embed], components: [row] });
+    const sentMsg = await channel.send({ embeds: [embed], components: [row] });
+    savePanelRef(channel.id, sentMsg.id);
     await interaction.reply({ content: `✅ Panel sent to ${channel}.`, ephemeral: true });
 }
 
