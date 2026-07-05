@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Events, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Events, ActivityType, PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -7,6 +7,7 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
     ]
 });
 
@@ -145,5 +146,34 @@ client.on(Events.InteractionCreate, async interaction => {
         }
     }
 });
+
+// ─── ,purge [#] ───────────────────────────────────────────────────────────────
+client.on(Events.MessageCreate, async message => {
+    if (message.author.bot) return;
+    if (!message.content.startsWith(',purge ')) return;
+
+    const isStaff = process.env.STAFF_ROLE_ID
+        ? message.member?.roles.cache.has(process.env.STAFF_ROLE_ID)
+        : message.member?.permissions.has(PermissionFlagsBits.ManageMessages);
+
+    if (!isStaff) {
+        return message.reply({ content: '❌ Staff only.', allowedMentions: { repliedUser: false } })
+            .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+    }
+
+    const amount = parseInt(message.content.split(' ')[1]);
+    if (isNaN(amount) || amount < 1 || amount > 100) {
+        return message.reply({ content: '❌ Please provide a number between 1 and 100.', allowedMentions: { repliedUser: false } })
+            .then(m => setTimeout(() => m.delete().catch(() => {}), 3000));
+    }
+
+    await message.delete().catch(() => {});
+    const deleted = await message.channel.bulkDelete(amount, true).catch(() => null);
+    const count = deleted?.size ?? 0;
+
+    const confirm = await message.channel.send(`🗑️ Deleted **${count}** message${count !== 1 ? 's' : ''}.`);
+    setTimeout(() => confirm.delete().catch(() => {}), 3000);
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 client.login(process.env.BOT_TOKEN);
