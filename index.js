@@ -36,7 +36,7 @@ const ACTIVITIES = [
     'Coding bots',
     'Created by: krytec_gaming',
     'Making liveries',
-    'Welcome to Supreme Design!',
+    'Welcome to Atlas Development!',
 ];
 let activityIndex = 0;
 
