@@ -110,6 +110,11 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
                 await mod.handleApplyButton(interaction);
             }
+            if (interaction.customId.startsWith('coursecreator_approve_') || interaction.customId.startsWith('coursecreator_decline_')) {
+                const mod = require('./commands/coursecreator');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleApplyButton(interaction);
+            }
             if (interaction.customId === 'dashboard_support') {
                 const mod = require('./commands/dashboard');
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
@@ -131,6 +136,11 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.isModalSubmit()) {
             if (interaction.customId.startsWith('apply_modal_')) {
                 const mod = require('./commands/apply');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleApplyModalSubmit(interaction);
+            }
+            if (interaction.customId === 'coursecreator_apply_modal') {
+                const mod = require('./commands/coursecreator');
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
                 await mod.handleApplyModalSubmit(interaction);
             }
