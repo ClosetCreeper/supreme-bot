@@ -120,11 +120,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
                 await mod.handleSupportButton(interaction);
             }
-            if (interaction.customId === 'dashboard_apply') {
-                const mod = require('./commands/dashboard');
-                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
-                await mod.handleApplyButton(interaction);
-            }
             if (interaction.customId === 'support_claim' || interaction.customId === 'support_unclaim') {
                 const mod = require('./commands/dashboard');
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
