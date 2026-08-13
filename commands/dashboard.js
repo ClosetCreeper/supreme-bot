@@ -77,7 +77,6 @@ async function handleSend(interaction) {
     const footerUrl  = process.env.DASHBOARD_FOOTER_URL;
     const accentHex  = process.env.DASHBOARD_ACCENT_COLOR || '#1e90ff';
     const accentColor = parseInt(accentHex.replace('#', ''), 16);
-    const applyChannel = process.env.APPLY_CHANNEL_ID;
 
     const container = new ContainerBuilder().setAccentColor(accentColor);
 
@@ -99,9 +98,9 @@ async function handleSend(interaction) {
             .setLabel('Contact Support')
             .setStyle(ButtonStyle.Danger),
         new ButtonBuilder()
-            .setCustomId('dashboard_apply')
             .setLabel('Career Application')
-            .setStyle(ButtonStyle.Secondary),
+            .setStyle(ButtonStyle.Link)
+            .setURL('https://atlascoursesv1.vercel.app/apply'),
     );
 
     container.addActionRowComponents(buttonRow);
@@ -134,17 +133,6 @@ async function handleSupportButton(interaction) {
     await interaction.reply({
         content: 'Please select the type of support you need:',
         components: [new ActionRowBuilder().addComponents(menu)],
-        ephemeral: true,
-    });
-}
-
-// ─── Button: Career Application ───────────────────────────────────────────────
-async function handleApplyButton(interaction) {
-    const applyChannel = process.env.APPLY_CHANNEL_ID;
-    await interaction.reply({
-        content: applyChannel
-            ? `📋 To apply for a position, please head to <#${applyChannel}> and select an application!`
-            : '📋 Please head to the applications channel to apply for a position!',
         ephemeral: true,
     });
 }
@@ -358,7 +346,6 @@ module.exports = {
     ENV,
 
     handleSupportButton,
-    handleApplyButton,
     handleSupportSelect,
     handleClaimButton,
 
