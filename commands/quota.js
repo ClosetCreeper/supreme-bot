@@ -251,7 +251,7 @@ module.exports = {
         .setDefaultMemberPermissions(null)
         .addSubcommand(sub => sub
             .setName('startwave')
-            .setDescription('Start wave 1 (only needed once, ever)')
+            .setDescription('Start wave 1 (only for when bot resets)')
         )
         .addSubcommand(sub => sub
             .setName('endwave')
