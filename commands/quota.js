@@ -103,7 +103,7 @@ async function handleWaveView(interaction) {
         wave = getCurrentWave(data);
         if (!wave) {
             return interaction.reply({
-                content: '❌ No active wave yet — one starts automatically once a tracked member sends a message.',
+                content: '❌ No active wave yet — one will start automatically once a tracked member sends a message.',
                 ephemeral: true,
             });
         }
@@ -123,7 +123,7 @@ async function handleSet(interaction) {
     saveData(data);
 
     await interaction.reply({
-        content: `✅ Quota set to **${amount}** messages. Applies to the current wave and will be the default for future waves.`,
+        content: `✅ Quota set to **${amount}** messages.`,
     });
 }
 
