@@ -8,6 +8,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
     ]
 });
 
@@ -178,6 +179,20 @@ client.on(Events.MessageCreate, async message => {
 
     const confirm = await message.channel.send(`🗑️ Deleted **${count}** message${count !== 1 ? 's' : ''}.`);
     setTimeout(() => confirm.delete().catch(() => {}), 3000);
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Quota message tracking ────────────────────────────────────────────────────
+client.on(Events.MessageCreate, message => {
+    if (message.author.bot || !message.member) return;
+    const quotaRoleId = process.env.QUOTA_ROLE_ID || '1537870535021826079';
+    if (!message.member.roles.cache.has(quotaRoleId)) return;
+
+    try {
+        require('./commands/quota').trackMessage(message.author.id);
+    } catch (err) {
+        console.error('Quota tracking failed:', err);
+    }
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
