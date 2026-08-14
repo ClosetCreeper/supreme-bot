@@ -183,13 +183,10 @@ client.on(Events.MessageCreate, async message => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Quota message tracking ────────────────────────────────────────────────────
-client.on(Events.MessageCreate, message => {
+client.on(Events.MessageCreate, async message => {
     if (message.author.bot || !message.member) return;
-    const quotaRoleId = process.env.QUOTA_ROLE_ID || '1537870535021826079';
-    if (!message.member.roles.cache.has(quotaRoleId)) return;
-
     try {
-        require('./commands/quota').trackMessage(message.author.id);
+        await require('./commands/quota').trackMessage(message);
     } catch (err) {
         console.error('Quota tracking failed:', err);
     }
