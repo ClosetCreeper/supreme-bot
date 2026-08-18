@@ -140,6 +140,11 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
                 await mod.handleApplyModalSubmit(interaction);
             }
+            if (interaction.customId.startsWith('support_modal_')) {
+                const mod = require('./commands/dashboard');
+                if (isDevLocked(mod, interaction.user.id)) return replyDevLocked(interaction);
+                await mod.handleSupportModalSubmit(interaction);
+            }
             return;
         }
     } catch (err) {
