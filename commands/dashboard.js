@@ -307,9 +307,11 @@ async function handleClose(interaction) {
     await interaction.reply({
         embeds: [new EmbedBuilder()
             .setTitle('🔒 Ticket Closed')
-            .setDescription('This ticket has been closed.\n\nUse `/ticket delete` to remove this channel.')
+            .setDescription('This ticket has been closed.\n\nThis channel will be deleted in 10 seconds.')
             .setColor(0xed4245).setTimestamp().setFooter({ text: `Closed by ${interaction.user.tag}` })]
     });
+
+    setTimeout(() => channel.delete().catch(console.error), 10000);
 }
 
 // ─── /ticket rename ───────────────────────────────────────────────────────────
@@ -393,15 +395,6 @@ async function handleRemove(interaction) {
     });
 }
 
-// ─── /ticket delete ───────────────────────────────────────────────────────────
-async function handleDelete(interaction) {
-    const channel = interaction.channel;
-    if (!isSupportTicket(channel)) return interaction.reply({ content: '❌ Support ticket channels only.', ephemeral: true });
-
-    await interaction.reply({ content: '🗑️ Deleting channel in 3 seconds...', ephemeral: true });
-    setTimeout(() => channel.delete().catch(console.error), 3000);
-}
-
 // ─── Command definition ───────────────────────────────────────────────────────
 module.exports = {
     ENV,
@@ -440,8 +433,7 @@ module.exports.ticketData = new SlashCommandBuilder()
     .addSubcommand(sub => sub.setName('claim').setDescription('Claim this ticket'))
     .addSubcommand(sub => sub.setName('unclaim').setDescription('Unclaim this ticket'))
     .addSubcommand(sub => sub.setName('add').setDescription('Add a user to this ticket').addUserOption(opt => opt.setName('user').setDescription('User to add').setRequired(true)))
-    .addSubcommand(sub => sub.setName('remove').setDescription('Remove a user from this ticket').addUserOption(opt => opt.setName('user').setDescription('User to remove').setRequired(true)))
-    .addSubcommand(sub => sub.setName('delete').setDescription('Delete this ticket channel'));
+    .addSubcommand(sub => sub.setName('remove').setDescription('Remove a user from this ticket').addUserOption(opt => opt.setName('user').setDescription('User to remove').setRequired(true)));
 
 module.exports.ticketExecute = async function(interaction) {
     const sub = interaction.options.getSubcommand();
@@ -455,6 +447,5 @@ module.exports.ticketExecute = async function(interaction) {
         case 'unclaim': return handleUnclaim(interaction);
         case 'add':     return handleAdd(interaction);
         case 'remove':  return handleRemove(interaction);
-        case 'delete':  return handleDelete(interaction);
     }
 };
