@@ -12,6 +12,9 @@ const {
     ButtonStyle,
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
     ChannelType,
     PermissionFlagsBits,
     MessageFlags,
@@ -143,15 +146,51 @@ async function handleSupportButton(interaction) {
     });
 }
 
-// ─── Select menu: open support ticket ─────────────────────────────────────────
+// ─── Select menu: ask what they need help with ────────────────────────────────
 async function handleSupportSelect(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     const guild      = interaction.guild;
     const member     = interaction.member;
     const serviceKey = interaction.values[0];
     const label      = SUPPORT_CATEGORIES[serviceKey];
+
+    const existing = guild.channels.cache.find(c =>
+        c.topic && c.topic === `SUPPORT_TICKET:${serviceKey}:${member.id}`
+    );
+    if (existing) {
+        return interaction.reply({ content: `❌ You already have an open **${label}** ticket: ${existing}`, ephemeral: true });
+    }
+
+    const modal = new ModalBuilder()
+        .setCustomId(`support_modal_${serviceKey}`)
+        .setTitle(label)
+        .addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('support_question')
+                    .setLabel('What can we help you with?')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true)
+                    .setMaxLength(1000)
+            )
+        );
+
+    await interaction.showModal(modal);
+}
+
+// ─── Modal submit: open support ticket ────────────────────────────────────────
+async function handleSupportModalSubmit(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const guild      = interaction.guild;
+    const member     = interaction.member;
+    const serviceKey = interaction.customId.replace('support_modal_', '');
+    const label      = SUPPORT_CATEGORIES[serviceKey];
     const staffRole  = process.env.STAFF_ROLE_ID;
+    const answer     = interaction.fields.getTextInputValue('support_question');
+
+    if (!label) {
+        return interaction.editReply({ content: '❌ Unknown ticket type.' });
+    }
 
     const existing = guild.channels.cache.find(c =>
         c.topic && c.topic === `SUPPORT_TICKET:${serviceKey}:${member.id}`
@@ -199,12 +238,23 @@ async function handleSupportSelect(interaction) {
         .setTimestamp();
     if (bannerUrl) openEmbed.setImage(bannerUrl);
 
-    const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
-    if (pingRoleId) {
-        await ticketChannel.send({ content: `<@&${pingRoleId}>`, allowedMentions: { roles: [pingRoleId] } });
-    }
+    const responseEmbed = new EmbedBuilder()
+        .setTitle(label)
+        .setDescription(
+            `Here are the responses submitted with this ticket.\n\n` +
+            `**What can we help you with?**\n${answer}`
+        )
+        .setColor(0x1e90ff);
 
-    await ticketChannel.send({ content: `${member}`, embeds: [openEmbed], components: [claimButtonRow()] });
+    const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
+    const pingContent = pingRoleId ? `${member} | <@&${pingRoleId}>` : `${member}`;
+
+    await ticketChannel.send({
+        content: pingContent,
+        embeds: [openEmbed, responseEmbed],
+        components: [claimButtonRow()],
+        allowedMentions: pingRoleId ? { roles: [pingRoleId], users: [member.id] } : undefined,
+    });
     await interaction.editReply({ content: `✅ Your ticket has been opened: ${ticketChannel}` });
 }
 
@@ -358,6 +408,7 @@ module.exports = {
 
     handleSupportButton,
     handleSupportSelect,
+    handleSupportModalSubmit,
     handleClaimButton,
 
     data: new SlashCommandBuilder()
