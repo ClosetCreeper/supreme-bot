@@ -24,6 +24,12 @@ const SUPPORT_CATEGORIES = {
     general:    'General Support',
 };
 
+const SUPPORT_PING_ROLES = {
+    general:    '1509235380866519199',
+    management: '1520978428524757032',
+    affiliate:  '1520978428524757032',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function getOrCreateCategory(guild, name) {
     let cat = guild.channels.cache.find(
@@ -192,6 +198,11 @@ async function handleSupportSelect(interaction) {
         .setColor(0x1e90ff)
         .setTimestamp();
     if (bannerUrl) openEmbed.setImage(bannerUrl);
+
+    const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
+    if (pingRoleId) {
+        await ticketChannel.send({ content: `<@&${pingRoleId}>`, allowedMentions: { roles: [pingRoleId] } });
+    }
 
     await ticketChannel.send({ content: `${member}`, embeds: [openEmbed], components: [claimButtonRow()] });
     await interaction.editReply({ content: `✅ Your ticket has been opened: ${ticketChannel}` });
