@@ -80,3 +80,5 @@ Tracks how many messages members send per "wave," checked against a per-role quo
 ## Customizing the panel embed
 
 Edit the status lines in `commands/order.js` inside `handlePanel()` — swap the emoji env vars and text to reflect actual open/closed/delayed states.
+
+Updated August 18, 2026
