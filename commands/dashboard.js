@@ -227,6 +227,7 @@ async function handleSupportModalSubmit(interaction) {
     });
 
     const bannerUrl  = process.env.SUPPORT_BANNER_URL || process.env.DASHBOARD_BANNER_URL;
+    const footerUrl  = process.env.SUPPORT_FOOTER_URL || process.env.DASHBOARD_FOOTER_URL;
     const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
     const pingContent = pingRoleId ? `${member} | <@&${pingRoleId}>` : `${member}`;
 
@@ -258,6 +259,12 @@ async function handleSupportModalSubmit(interaction) {
     );
 
     container.addActionRowComponents(claimButtonRow());
+
+    if (footerUrl) {
+        container.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(item => item.setURL(footerUrl))
+        );
+    }
 
     await ticketChannel.send({
         components: [container],
