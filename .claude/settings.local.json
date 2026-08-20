@@ -14,7 +14,12 @@
       "Bash(gh pr create --title 'Make dashboard Career Application button a link' --body ' *)",
       "mcp__fe2fd0bf-ae66-4986-b6de-53f819b84246__create_pull_request",
       "mcp__fe2fd0bf-ae66-4986-b6de-53f819b84246__get_me",
-      "Bash(node -c commands/quota.js)"
+      "Bash(node -c commands/quota.js)",
+      "Bash(node -c commands/ad.js)",
+      "Bash(node -e ' *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(git -C /Users/kehoebrogna/Downloads/supreme-bot status --short)",
+      "Bash(node -c /Users/kehoebrogna/Downloads/supreme-bot/commands/dashboard.js)"
     ]
   }
 }
