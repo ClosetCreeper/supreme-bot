@@ -226,34 +226,50 @@ async function handleSupportModalSubmit(interaction) {
         permissionOverwrites: overwrites,
     });
 
-    const bannerUrl = process.env.DASHBOARD_BANNER_URL;
-    const openEmbed = new EmbedBuilder()
-        .setTitle(`🎫 ${label}`)
-        .setDescription(
+    const bannerUrl  = process.env.SUPPORT_BANNER_URL || process.env.DASHBOARD_BANNER_URL;
+    const footerUrl  = process.env.SUPPORT_FOOTER_URL || process.env.DASHBOARD_FOOTER_URL;
+    const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
+    const pingContent = pingRoleId ? `${member} | <@&${pingRoleId}>` : `${member}`;
+
+    const container = new ContainerBuilder().setAccentColor(0x1e90ff);
+
+    if (bannerUrl) {
+        container.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(item => item.setURL(bannerUrl))
+        );
+    }
+
+    container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(pingContent),
+        new TextDisplayBuilder().setContent(
+            `## 🎫 ${label}\n` +
             `Hey ${member}, thanks for reaching out!\n\n` +
             `**Type:** ${label}\n` +
             `A staff member will be with you shortly.`
         )
-        .setColor(0x1e90ff)
-        .setTimestamp();
-    if (bannerUrl) openEmbed.setImage(bannerUrl);
+    );
 
-    const responseEmbed = new EmbedBuilder()
-        .setTitle(label)
-        .setDescription(
+    container.addSeparatorComponents(new SeparatorBuilder());
+
+    container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
             `Here are the responses submitted with this ticket.\n\n` +
             `**What can we help you with?**\n${answer}`
         )
-        .setColor(0x1e90ff);
+    );
 
-    const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
-    const pingContent = pingRoleId ? `${member} | <@&${pingRoleId}>` : `${member}`;
+    container.addActionRowComponents(claimButtonRow());
+
+    if (footerUrl) {
+        container.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(item => item.setURL(footerUrl))
+        );
+    }
 
     await ticketChannel.send({
-        content: pingContent,
-        embeds: [openEmbed, responseEmbed],
-        components: [claimButtonRow()],
-        allowedMentions: pingRoleId ? { roles: [pingRoleId], users: [member.id] } : undefined,
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: pingRoleId ? { roles: [pingRoleId], users: [member.id] } : { users: [member.id] },
     });
     await interaction.editReply({ content: `✅ Your ticket has been opened: ${ticketChannel}` });
 }
