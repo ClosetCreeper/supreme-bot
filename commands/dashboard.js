@@ -226,7 +226,7 @@ async function handleSupportModalSubmit(interaction) {
         permissionOverwrites: overwrites,
     });
 
-    const bannerUrl  = process.env.DASHBOARD_BANNER_URL;
+    const bannerUrl  = process.env.SUPPORT_BANNER_URL || process.env.DASHBOARD_BANNER_URL;
     const pingRoleId = SUPPORT_PING_ROLES[serviceKey];
     const pingContent = pingRoleId ? `${member} | <@&${pingRoleId}>` : `${member}`;
 

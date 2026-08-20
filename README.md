@@ -19,6 +19,8 @@ A Discord.js v14 order ticket bot for design services.
    - `GUILD_ID` — Your server's guild ID
    - `STAFF_ROLE_ID` — The role ID that can manage tickets (see all channels, run all commands)
    - `EMOJI_OPEN` / `EMOJI_CLOSED` / `EMOJI_DELAYED` — Emoji for the panel (unicode or custom `<:name:id>`)
+   - `DASHBOARD_BANNER_URL` — Banner image shown at the top of the `/dashboard send` panel
+   - `SUPPORT_BANNER_URL` — Banner image shown at the top of each opened support ticket. Falls back to `DASHBOARD_BANNER_URL` if unset.
    - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — Your Supabase project URL and service-role key, used by `/quota` (see below). Run `supabase/quota_schema.sql` in the Supabase SQL editor once before first use.
 
 3. **Deploy commands**
